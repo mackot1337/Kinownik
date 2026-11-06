@@ -32,8 +32,26 @@ data class Session(
     val titleId: Int,
     val date: String,
     val watchedRange: String,
-    val place: String?,
+    val placeId: Int?,
     val photoPath: String?
+)
+
+data class Place(
+    val id: Int,
+    val name: String,
+    val latitude: Double?,
+    val longitude: Double?
+)
+
+data class Genre(
+    val id: Int,
+    val name: String,
+    val tmdbId: Int?
+)
+
+data class TitleGenre(
+    val titleId: Int,
+    val genreId: Int
 )
 
 fun typeLabel(type: TitleType): String {
