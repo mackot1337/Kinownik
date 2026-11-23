@@ -1,10 +1,10 @@
 package com.example.kinownik.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.kinownik.ui.screens.EveningScreen
 import com.example.kinownik.ui.screens.LibraryScreen
 import com.example.kinownik.ui.screens.SearchScreen
@@ -16,35 +16,51 @@ private const val WATCHLIST = "watchlist"
 private const val EVENING = "evening"
 private const val LIBRARY = "library"
 private const val SEARCH = "search"
-private const val TITLE = "title"
+private const val TITLE = "title/{titleId}"
 private const val SESSION = "session"
 
 @Composable
 fun KinownikApp() {
-    var stack by remember { mutableStateOf(listOf(WATCHLIST)) }
-    val screen = stack.last()
-    val openWatchlist = { stack = listOf(WATCHLIST) }
-    val openLibrary = { stack = listOf(LIBRARY) }
-    val back = { stack = stack.dropLast(1) }
+    val nav = rememberNavController()
+    NavHost(navController = nav, startDestination = WATCHLIST) {
+        composable(WATCHLIST) {
+            WatchlistScreen(
+                onStart = { nav.navigate(EVENING) },
+                onOpenTitle = { id -> nav.navigate("title/$id") },
+                onOpenLibrary = { nav.openTab(LIBRARY) },
+                onSearch = { nav.navigate(SEARCH) }
+            )
+        }
+        composable(LIBRARY) {
+            LibraryScreen(
+                onOpenTitle = { id -> nav.navigate("title/$id") },
+                onOpenWatchlist = { nav.openTab(WATCHLIST) },
+                onSearch = { nav.navigate(SEARCH) }
+            )
+        }
+        composable(EVENING) {
+            EveningScreen(onBack = { nav.popBackStack() })
+        }
+        composable(SEARCH) {
+            SearchScreen(onBack = { nav.popBackStack() })
+        }
+        composable(TITLE) { entry ->
+            val titleId = entry.arguments?.getString("titleId")?.toIntOrNull() ?: 0
+            TitleScreen(
+                titleId = titleId,
+                onBack = { nav.popBackStack() },
+                onAddSession = { nav.navigate(SESSION) }
+            )
+        }
+        composable(SESSION) {
+            SessionScreen(onBack = { nav.popBackStack() })
+        }
+    }
+}
 
-    when (screen) {
-        WATCHLIST -> WatchlistScreen(
-            onStart = { stack = stack + EVENING },
-            onOpenTitle = { stack = stack + TITLE },
-            onOpenLibrary = openLibrary,
-            onSearch = { stack = stack + SEARCH }
-        )
-        LIBRARY -> LibraryScreen(
-            onOpenTitle = { stack = stack + TITLE },
-            onOpenWatchlist = openWatchlist,
-            onSearch = { stack = stack + SEARCH }
-        )
-        EVENING -> EveningScreen(onBack = back)
-        SEARCH -> SearchScreen(onBack = back)
-        TITLE -> TitleScreen(
-            onBack = back,
-            onAddSession = { stack = stack + SESSION }
-        )
-        SESSION -> SessionScreen(onBack = back)
+private fun NavHostController.openTab(route: String) {
+    navigate(route) {
+        popUpTo(WATCHLIST)
+        launchSingleTop = true
     }
 }
